@@ -131,7 +131,7 @@ def expenses():
         db.session.add(expense)
         db.session.commit()
 
-        # Check if this expense pushes the category over budget
+        # Check if this expense pushes the category over the notification threshold
         budget = Budget.query.filter_by(
             user_id=current_user.id,
             category_id=category_id
@@ -143,8 +143,9 @@ def expenses():
                 category_id=category_id
             ).all())
 
-            if total_expenses >= budget.amount * 0.9:
-                flash(f'Warning: You\'ve reached {int(total_expenses/budget.amount*100)}% of your {expense.category.name} budget!', 'warning')
+            percentage = (total_expenses / budget.amount) * 100
+            if percentage >= budget.notify_threshold:
+                flash(f'Warning: You\'ve reached {int(percentage)}% of your {expense.category.name} budget!', 'warning')
 
         flash('Expense added successfully!', 'success')
 
@@ -158,6 +159,7 @@ def budget():
     if request.method == 'POST':
         category_id = int(request.form.get('category'))
         amount = float(request.form.get('amount'))
+        notify_threshold = float(request.form.get('notify_threshold', 90))  # Default to 90% if not provided
 
         existing_budget = Budget.query.filter_by(
             user_id=current_user.id,
@@ -166,11 +168,13 @@ def budget():
 
         if existing_budget:
             existing_budget.amount = amount
+            existing_budget.notify_threshold = notify_threshold
         else:
             new_budget = Budget(
                 user_id=current_user.id,
                 category_id=category_id,
-                amount=amount
+                amount=amount,
+                notify_threshold=notify_threshold
             )
             db.session.add(new_budget)
 

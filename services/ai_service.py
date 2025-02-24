@@ -3,11 +3,11 @@ from openai import OpenAI
 from datetime import datetime, timedelta
 from models import Expense, Budget
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+# Initialize OpenAI client with the provided API key
+client = OpenAI(api_key="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")
 
 def analyze_spending_patterns(user):
     """Analyze user's spending patterns and generate insights."""
-    # Get expenses from the last 30 days
     thirty_days_ago = datetime.now() - timedelta(days=30)
     expenses = Expense.query.filter(
         Expense.user_id == user.id,
@@ -39,7 +39,6 @@ def analyze_spending_patterns(user):
         spending_context += "\n"
 
     try:
-        # Generate personalized insights using OpenAI
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[

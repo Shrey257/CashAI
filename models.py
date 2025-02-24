@@ -27,5 +27,6 @@ class Expense(db.Model):
 class Budget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
+    notify_threshold = db.Column(db.Float, default=90.0)  # Percentage at which to notify (default 90%)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)

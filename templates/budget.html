@@ -28,6 +28,15 @@
                             <input type="number" class="form-control" id="amount" name="amount" step="0.01" required>
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label for="notify_threshold" class="form-label">Notification Threshold (%)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="notify_threshold" name="notify_threshold" 
+                                   min="1" max="100" value="90" required>
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="form-text">You'll be notified when spending reaches this percentage of your budget.</div>
+                    </div>
                     <button type="submit" class="btn btn-primary w-100">Set Budget</button>
                 </form>
             </div>
@@ -50,7 +59,7 @@
                                     <span>Spent: ${{ "%.2f"|format(expense_sum) }}</span>
                                 </div>
                                 <div class="progress expense-progress">
-                                    <div class="progress-bar {% if percentage > 90 %}bg-danger{% elif percentage > 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                    <div class="progress-bar {% if percentage > budget.notify_threshold %}bg-danger{% elif percentage > (budget.notify_threshold * 0.8) %}bg-warning{% else %}bg-success{% endif %}"
                                          role="progressbar"
                                          style="width: {{ percentage }}%"
                                          aria-valuenow="{{ percentage }}"
@@ -61,6 +70,9 @@
                                          data-budget="{{ budget.amount }}">
                                         {{ percentage }}%
                                     </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">Alert at: {{ budget.notify_threshold }}% of budget</small>
                                 </div>
                             </div>
                         </div>
