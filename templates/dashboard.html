@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Welcome, {{ current_user.username }}!</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Expense Overview</h5>
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Financial Tips</h5>
+                <div class="financial-tip mb-3">
+                    <p>Track every expense, no matter how small.</p>
+                </div>
+                <div class="financial-tip mb-3">
+                    <p>Look for student discounts on textbooks and supplies.</p>
+                </div>
+                <div class="financial-tip">
+                    <p>Cook meals at home to save on food expenses.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recent Expenses</h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ expense.category.name }}</td>
+                                <td>${{ "%.2f"|format(expense.amount) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Budget Status</h5>
+                {% for budget in budgets %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>{{ budget.category.name }}</span>
+                        <span>${{ "%.2f"|format(budget.amount) }}</span>
+                    </div>
+                    {% set expense_sum = budget.category.expenses|selectattr('user_id', 'equalto', current_user.id)|sum(attribute='amount') %}
+                    {% set percentage = (expense_sum / budget.amount * 100)|round|int %}
+                    <div class="progress expense-progress">
+                        <div class="progress-bar {% if percentage > 90 %}bg-danger{% elif percentage > 75 %}bg-warning{% else %}bg-success{% endif %}"
+                             role="progressbar"
+                             style="width: {{ percentage }}%"
+                             aria-valuenow="{{ percentage }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             data-category="{{ budget.category.name }}"
+                             data-expense="{{ expense_sum }}"
+                             data-budget="{{ budget.amount }}">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

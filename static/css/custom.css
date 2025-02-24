@@ -1,0 +1,41 @@
+/* Custom styles on top of Bootstrap dark theme */
+:root {
+    --budget-green: var(--bs-success);
+    --budget-red: var(--bs-danger);
+}
+
+.budget-card {
+    transition: transform 0.2s;
+}
+
+.budget-card:hover {
+    transform: translateY(-5px);
+}
+
+.expense-progress {
+    height: 10px;
+}
+
+.financial-tip {
+    border-left: 4px solid var(--bs-info);
+    padding-left: 1rem;
+}
+
+.toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1050;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 200px;
+    }
+}

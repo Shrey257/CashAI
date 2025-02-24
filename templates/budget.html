@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Budget Management</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Set Budget</h5>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category" required>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Monthly Budget</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="amount" name="amount" step="0.01" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Set Budget</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Current Budgets</h5>
+                <div class="row">
+                    {% for budget in budgets %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card budget-card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ budget.category.name }}</h6>
+                                {% set expense_sum = budget.category.expenses|selectattr('user_id', 'equalto', current_user.id)|sum(attribute='amount') %}
+                                {% set percentage = (expense_sum / budget.amount * 100)|round|int %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Monthly Budget: ${{ "%.2f"|format(budget.amount) }}</span>
+                                    <span>Spent: ${{ "%.2f"|format(expense_sum) }}</span>
+                                </div>
+                                <div class="progress expense-progress">
+                                    <div class="progress-bar {% if percentage > 90 %}bg-danger{% elif percentage > 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ percentage }}%"
+                                         aria-valuenow="{{ percentage }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100"
+                                         data-category="{{ budget.category.name }}"
+                                         data-expense="{{ expense_sum }}"
+                                         data-budget="{{ budget.amount }}">
+                                        {{ percentage }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
