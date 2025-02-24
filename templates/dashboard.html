@@ -21,15 +21,14 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Financial Tips</h5>
+                <h5 class="card-title">AI Financial Insights</h5>
                 <div class="financial-tip mb-3">
-                    <p>Track every expense, no matter how small.</p>
+                    {{ ai_insights|safe }}
                 </div>
-                <div class="financial-tip mb-3">
-                    <p>Look for student discounts on textbooks and supplies.</p>
-                </div>
+                <hr>
+                <h6 class="card-subtitle mb-2 text-muted">Today's Saving Tip:</h6>
                 <div class="financial-tip">
-                    <p>Cook meals at home to save on food expenses.</p>
+                    <p>{{ saving_tip }}</p>
                 </div>
             </div>
         </div>
