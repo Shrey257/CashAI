@@ -7,7 +7,14 @@ from datetime import datetime
 
 from extensions import db
 from models import User, Expense, Budget, Category
-from services.ai_service import analyze_spending_patterns, generate_saving_tip
+from services.ai_service import (
+    analyze_spending_patterns, 
+    generate_saving_tip,
+    simulate_financial_scenario,
+    analyze_purchase_value,
+    analyze_expense_cause,
+    categorize_transaction
+)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -98,8 +105,20 @@ def dashboard():
 def expenses():
     if request.method == 'POST':
         amount = float(request.form.get('amount'))
-        category_id = int(request.form.get('category'))
-        description = request.form.get('description')
+        description = request.form.get('description', '')
+
+        # Use NLP to categorize the expense if category not provided
+        category_id = request.form.get('category')
+        if not category_id:
+            suggested_category = categorize_transaction(description, amount)
+            category = Category.query.filter_by(name=suggested_category).first()
+            if category:
+                category_id = category.id
+            else:
+                # Default to first category if suggestion fails
+                category_id = Category.query.first().id
+        else:
+            category_id = int(category_id)
 
         expense = Expense(
             amount=amount,
@@ -111,6 +130,22 @@ def expenses():
 
         db.session.add(expense)
         db.session.commit()
+
+        # Check if this expense pushes the category over budget
+        budget = Budget.query.filter_by(
+            user_id=current_user.id,
+            category_id=category_id
+        ).first()
+
+        if budget:
+            total_expenses = sum(e.amount for e in Expense.query.filter_by(
+                user_id=current_user.id,
+                category_id=category_id
+            ).all())
+
+            if total_expenses >= budget.amount * 0.9:
+                flash(f'Warning: You\'ve reached {int(total_expenses/budget.amount*100)}% of your {expense.category.name} budget!', 'warning')
+
         flash('Expense added successfully!', 'success')
 
     categories = Category.query.all()
@@ -145,6 +180,34 @@ def budget():
     categories = Category.query.all()
     budgets = Budget.query.filter_by(user_id=current_user.id).all()
     return render_template('budget.html', categories=categories, budgets=budgets)
+
+@app.route('/api/chat', methods=['POST'])
+@login_required
+def chat():
+    message = request.json.get('message', '').lower()
+    if not message:
+        return jsonify({'response': 'Please provide a message'}), 400
+
+    try:
+        # Handle different types of financial queries
+        if any(word in message for word in ['simulate', 'job', 'income']):
+            response = simulate_financial_scenario(message, current_user)
+        elif any(word in message for word in ['worth', 'buy', 'purchase']):
+            # Extract price from message if available
+            import re
+            price_match = re.search(r'\$?(\d+(?:\.\d{2})?)', message)
+            price = float(price_match.group(1)) if price_match else 0
+            response = analyze_purchase_value(message, price, current_user)
+        elif any(word in message for word in ['overspend', 'spent', 'spending']):
+            response = analyze_expense_cause(current_user)
+        else:
+            # General financial advice
+            response = analyze_spending_patterns(current_user)
+
+        return jsonify({'response': response})
+    except Exception as e:
+        logging.error(f"Error in chat endpoint: {str(e)}")
+        return jsonify({'response': 'Sorry, I encountered an error. Please try again later.'}), 500
 
 # Initialize database
 with app.app_context():
