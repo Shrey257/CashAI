@@ -1,10 +1,11 @@
 import os
 from openai import OpenAI
 from datetime import datetime, timedelta
-from models import Expense, Budget
+from models import Expense, Budget, Category
+from extensions import db
 
 # Initialize OpenAI client with the provided API key
-client = OpenAI(api_key="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")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def analyze_spending_patterns(user):
     """Analyze user's spending patterns and generate insights."""
@@ -14,10 +15,27 @@ def analyze_spending_patterns(user):
         Expense.date >= thirty_days_ago
     ).all()
 
+    # Prepare context for OpenAI
     if not expenses:
-        return "Not enough spending data to generate insights. Start tracking your expenses!"
+        try:
+            # Generate general advice for new users
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": """You are a financial advisor for college students.
+                    Provide 3 specific tips for getting started with budgeting.
+                    Keep the advice practical and student-focused.
+                    Format the response as bullet points."""},
+                    {"role": "user", "content": "Give advice for a student just starting to track their expenses."}
+                ]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return """• Start by tracking all your expenses, no matter how small
+• Set realistic budget categories based on your income
+• Look for student discounts and deals to maximize savings"""
 
-    # Calculate total spending by category
+    # If there is spending data, analyze it
     category_spending = {}
     for expense in expenses:
         category = expense.category.name
@@ -25,10 +43,8 @@ def analyze_spending_patterns(user):
             category_spending[category] = 0
         category_spending[category] += expense.amount
 
-    # Get user's budgets
     budgets = {budget.category.name: budget.amount for budget in user.budgets}
 
-    # Prepare context for OpenAI
     spending_context = "Here's the student's spending data for the last 30 days:\n"
     for category, amount in category_spending.items():
         budget = budgets.get(category, 0)
@@ -42,118 +58,32 @@ def analyze_spending_patterns(user):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """You are a financial advisor for college students.
-                Analyze their spending patterns and provide 3 specific, actionable tips to help them save money.
-                Keep the advice concise, practical, and relevant to students.
-                Format the response as a bullet-pointed list."""},
+                {"role": "system", "content": """You are a financial advisor helping a college student understand their spending.
+                Analyze their recent expenses and provide 3 specific, actionable insights.
+                Focus on areas of improvement and practical saving opportunities.
+                Use bullet points and be specific about numbers and percentages."""},
                 {"role": "user", "content": spending_context}
-            ],
-            max_tokens=300,
-            temperature=0.7
-        )
-
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return "Unable to generate personalized insights at the moment. Please try again later."
-
-def analyze_expense_cause(user, month=None):
-    """Analyze why spending increased/decreased compared to previous month."""
-    current_date = datetime.now()
-    if month:
-        current_date = datetime.strptime(month, '%Y-%m')
-
-    current_month_start = current_date.replace(day=1)
-    previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
-
-    current_expenses = Expense.query.filter(
-        Expense.user_id == user.id,
-        Expense.date >= current_month_start,
-        Expense.date < current_month_start + timedelta(days=32)
-    ).all()
-
-    previous_expenses = Expense.query.filter(
-        Expense.user_id == user.id,
-        Expense.date >= previous_month_start,
-        Expense.date < current_month_start
-    ).all()
-
-    try:
-        spending_analysis = {
-            "current_month": summarize_expenses(current_expenses),
-            "previous_month": summarize_expenses(previous_expenses)
-        }
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": """You are a financial analyst helping a college student understand their spending patterns.
-                Compare the current and previous month's expenses and explain significant changes.
-                Focus on actionable insights and specific patterns."""},
-                {"role": "user", "content": f"Current month spending: {spending_analysis['current_month']}\n\nPrevious month spending: {spending_analysis['previous_month']}"}
-            ],
-            max_tokens=250
+            ]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return "Unable to analyze spending patterns at the moment."
+        return "• Track your daily expenses to build better spending habits\n• Set budget alerts to avoid overspending\n• Look for student discounts on essential purchases"
 
-def simulate_financial_scenario(scenario_description, user):
-    """Simulate financial scenarios based on user's current spending patterns."""
-    # Get user's current financial data
-    current_expenses = Expense.query.filter_by(user_id=user.id).all()
-    current_budgets = Budget.query.filter_by(user_id=user.id).all()
-
-    # Prepare financial context
-    financial_context = f"""Current financial situation:
-    Monthly Budgets: {', '.join([f'{b.category.name}: ${b.amount:.2f}' for b in current_budgets])}
-    Recent Expenses: {', '.join([f'{e.category.name}: ${e.amount:.2f}' for e in current_expenses[-5:]])}
-    Scenario: {scenario_description}
-    """
-
+def generate_saving_tip():
+    """Generate a general saving tip for students."""
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """You are a financial simulator helping a college student understand potential financial scenarios.
-                Analyze their current spending and simulate how their finances would change under the given scenario.
-                Provide specific numbers and realistic projections.
-                Consider both income and expenses.
-                Format the response clearly with bullet points and specific recommendations."""},
-                {"role": "user", "content": financial_context}
-            ],
-            max_tokens=500
+                {"role": "system", "content": """You are a financial advisor for college students.
+                Provide one practical money-saving tip specifically for college students.
+                Keep it concise (max 2 sentences) and actionable."""},
+                {"role": "user", "content": "Give me a money-saving tip for college students."}
+            ]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return "Unable to simulate scenario at the moment. Please try again later."
-
-def analyze_purchase_value(item_description, price, user):
-    """Analyze if a purchase is worth it based on user's budget and spending history."""
-    try:
-        # Get user's financial context
-        monthly_expenses = sum([e.amount for e in user.expenses])
-        monthly_budgets = {b.category.name: b.amount for b in user.budgets}
-
-        context = f"""
-        User's monthly expenses: ${monthly_expenses:.2f}
-        Monthly budgets: {', '.join([f'{k}: ${v:.2f}' for k, v in monthly_budgets.items()])}
-        Proposed purchase: {item_description} for ${price:.2f}
-        """
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": """You are a financial advisor helping a college student decide on a purchase.
-                Analyze if the purchase is worth it based on their current financial situation.
-                Consider: budget impact, necessity, alternatives, and long-term value.
-                Provide a clear recommendation with reasoning."""},
-                {"role": "user", "content": context}
-            ],
-            max_tokens=300
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return "Unable to analyze purchase value at the moment. Please try again later."
+        return "Consider buying used textbooks or renting them through your campus bookstore to save significantly on course materials."
 
 def categorize_transaction(description, amount):
     """Use NLP to categorize a transaction based on its description."""
@@ -170,32 +100,72 @@ def categorize_transaction(description, amount):
                 - Utilities
                 Respond with ONLY the category name."""},
                 {"role": "user", "content": f"Transaction: {description} - ${amount}"}
-            ],
-            max_tokens=50
+            ]
         )
         category = response.choices[0].message.content.strip()
         return category if category in ['Food', 'Transportation', 'Education', 'Entertainment', 'Utilities'] else 'Other'
     except Exception as e:
         return 'Other'
 
-def generate_saving_tip():
-    """Generate a general saving tip for students."""
+def analyze_expense_cause(user):
+    """Analyze spending patterns and provide insights."""
+    expenses = Expense.query.filter_by(user_id=user.id).all()
+    if not expenses:
+        return "Start tracking your expenses to get personalized spending insights!"
+
+    total_spent = sum(e.amount for e in expenses)
+    categories = {}
+    for expense in expenses:
+        if expense.category.name not in categories:
+            categories[expense.category.name] = 0
+        categories[expense.category.name] += expense.amount
+
     try:
+        context = f"Total spent: ${total_spent:.2f}\nBreakdown by category:\n"
+        for category, amount in categories.items():
+            percentage = (amount / total_spent) * 100
+            context += f"- {category}: ${amount:.2f} ({percentage:.1f}%)\n"
+
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """You are a financial advisor for college students.
-                Provide one practical money-saving tip specifically for college students.
-                Keep it concise (max 2 sentences) and actionable."""},
-                {"role": "user", "content": "Give me a money-saving tip for college students."}
-            ],
-            max_tokens=100,
-            temperature=0.7
+                {"role": "system", "content": """Analyze the spending patterns and explain:
+                1. Which categories had the highest spending
+                2. Potential areas for savings
+                3. Specific recommendations for improvement
+                Keep the tone helpful and student-focused."""},
+                {"role": "user", "content": context}
+            ]
         )
-
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return "Look for student discounts on textbooks and supplies to save money."
+        return "Unable to analyze spending patterns at the moment. Try again later."
+
+def simulate_financial_scenario(description, user):
+    """Simulate the impact of financial changes."""
+    current_expenses = sum(e.amount for e in user.expenses) if user.expenses else 0
+    budgets = {b.category.name: b.amount for b in user.budgets}
+
+    try:
+        context = f"""Current monthly expenses: ${current_expenses:.2f}
+Current budgets: {', '.join(f'{cat}: ${amt:.2f}' for cat, amt in budgets.items())}
+Scenario to analyze: {description}"""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": """You are a financial simulator helping a student understand potential scenarios.
+                Analyze the situation and provide:
+                1. Projected financial impact
+                2. Potential benefits and risks
+                3. Specific recommendations
+                Use bullet points and include numbers where possible."""},
+                {"role": "user", "content": context}
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return "Unable to simulate this scenario at the moment. Please try again later."
 
 def summarize_expenses(expenses):
     """Helper function to summarize expenses by category"""

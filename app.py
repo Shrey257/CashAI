@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import re
 
 from extensions import db
 from models import User, Expense, Budget, Category
@@ -11,7 +12,6 @@ from services.ai_service import (
     analyze_spending_patterns, 
     generate_saving_tip,
     simulate_financial_scenario,
-    analyze_purchase_value,
     analyze_expense_cause,
     categorize_transaction
 )
@@ -32,7 +32,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
-# Login manager configuration
+# Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -41,68 +41,73 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Routes
+# Initialize database
+with app.app_context():
+    # Create all database tables
+    db.create_all()
+
+    # Create default categories if they don't exist
+    default_categories = ['Food', 'Transportation', 'Education', 'Entertainment', 'Utilities']
+    for category_name in default_categories:
+        if not Category.query.filter_by(name=category_name).first():
+            category = Category(name=category_name)
+            db.session.add(category)
+    db.session.commit()
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
-
-        if user and check_password_hash(user.password_hash, password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        flash('Invalid email or password', 'danger')
-    return render_template('login.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        if User.query.filter_by(email=email).first():
-            flash('Email already registered', 'danger')
-            return redirect(url_for('register'))
-
-        user = User(username=username, email=email)
-        user.password_hash = generate_password_hash(password)
-
-        db.session.add(user)
-        db.session.commit()
-
-        flash('Registration successful!', 'success')
-        return redirect(url_for('login'))
-    return render_template('register.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Get recent expenses and budgets
     expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).limit(5).all()
     budgets = Budget.query.filter_by(user_id=current_user.id).all()
 
-    # Get AI-generated insights
-    ai_insights = analyze_spending_patterns(current_user)
-    saving_tip = generate_saving_tip()
+    try:
+        # Get AI-generated insights
+        ai_insights = analyze_spending_patterns(current_user)
+        saving_tip = generate_saving_tip()
+    except Exception as e:
+        logging.error(f"Error generating AI insights: {str(e)}")
+        ai_insights = "• Start by tracking your daily expenses to understand your spending patterns\n• Set budgets for different categories to manage your finances better\n• Look for student discounts and deals to save money"
+        saving_tip = "Consider using student discounts and comparing prices before making purchases to maximize your savings."
 
     return render_template('dashboard.html', 
                          expenses=expenses, 
                          budgets=budgets,
                          ai_insights=ai_insights,
                          saving_tip=saving_tip)
+
+@app.route('/api/chat', methods=['POST'])
+@login_required
+def chat():
+    try:
+        message = request.json.get('message', '').lower()
+        if not message:
+            return jsonify({'response': 'Please ask me a question about your finances.'}), 400
+
+        # Handle different types of financial queries
+        if any(word in message for word in ['simulate', 'job', 'income']):
+            response = simulate_financial_scenario(message, current_user)
+        elif any(word in message for word in ['overspend', 'spent', 'spending']):
+            response = analyze_expense_cause(current_user)
+        else:
+            # General financial advice
+            response = analyze_spending_patterns(current_user)
+
+        if not response or response.isspace():
+            response = "I'm here to help you with budgeting, expense tracking, and financial advice. What would you like to know?"
+
+        return jsonify({'response': response})
+    except Exception as e:
+        logging.error(f"Error in chat endpoint: {str(e)}")
+        return jsonify({
+            'response': "I'm having trouble processing your request right now. Let me know if you'd like tips on budgeting, saving, or expense tracking."
+        }), 500
 
 @app.route('/expenses', methods=['GET', 'POST'])
 @login_required
@@ -189,42 +194,42 @@ def budget():
     budgets = Budget.query.filter_by(user_id=current_user.id).all()
     return render_template('budget.html', categories=categories, budgets=budgets)
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        flash('Invalid email or password', 'danger')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'danger')
+            return redirect(url_for('register'))
+
+        user = User(username=username, email=email)
+        user.password_hash = generate_password_hash(password)
+
+        db.session.add(user)
+        db.session.commit()
+
+        flash('Registration successful!', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/logout')
 @login_required
-def chat():
-    message = request.json.get('message', '').lower()
-    if not message:
-        return jsonify({'response': 'Please provide a message'}), 400
-
-    try:
-        # Handle different types of financial queries
-        if any(word in message for word in ['simulate', 'job', 'income']):
-            response = simulate_financial_scenario(message, current_user)
-        elif any(word in message for word in ['worth', 'buy', 'purchase']):
-            # Extract price from message if available
-            import re
-            price_match = re.search(r'\$?(\d+(?:\.\d{2})?)', message)
-            price = float(price_match.group(1)) if price_match else 0
-            response = analyze_purchase_value(message, price, current_user)
-        elif any(word in message for word in ['overspend', 'spent', 'spending']):
-            response = analyze_expense_cause(current_user)
-        else:
-            # General financial advice
-            response = analyze_spending_patterns(current_user)
-
-        return jsonify({'response': response})
-    except Exception as e:
-        logging.error(f"Error in chat endpoint: {str(e)}")
-        return jsonify({'response': 'Sorry, I encountered an error. Please try again later.'}), 500
-
-# Initialize database
-with app.app_context():
-    db.create_all()
-
-    # Create default categories if they don't exist
-    default_categories = ['Food', 'Transportation', 'Education', 'Entertainment', 'Utilities']
-    for category_name in default_categories:
-        if not Category.query.filter_by(name=category_name).first():
-            category = Category(name=category_name)
-            db.session.add(category)
-    db.session.commit()
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
