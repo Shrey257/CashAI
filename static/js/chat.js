@@ -98,4 +98,101 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     chatForm.parentNode.insertBefore(quickActionsDiv, chatForm);
+
+    // Add voice control button to chat interface
+    const voiceButton = document.createElement('button');
+    voiceButton.type = 'button';
+    voiceButton.className = 'btn btn-primary ms-2';
+    voiceButton.innerHTML = '<i class="bi bi-mic"></i>';
+    voiceButton.title = 'Use voice assistant';
+
+    let isRecording = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+
+    voiceButton.addEventListener('click', async () => {
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks);
+                    const audioData = await audioBlob.arrayBuffer();
+                    const floatArray = new Float32Array(audioData);
+
+                    // Show recording indicator
+                    appendMessage("Processing your voice message...", false);
+
+                    try {
+                        const response = await fetch('/api/voice/process', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ audio: Array.from(floatArray) })
+                        });
+
+                        if (!response.ok) throw new Error('Failed to process voice');
+
+                        const data = await response.json();
+
+                        // Display recognized text
+                        appendMessage(data.text, true);
+
+                        // Display and play response
+                        appendMessage(data.response, false);
+
+                        // Play audio response
+                        if (data.audio && !data.audio.error) {
+                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            const audioBuffer = audioContext.createBuffer(1, data.audio.audio.length, data.audio.sample_rate);
+                            audioBuffer.getChannelData(0).set(data.audio.audio);
+
+                            const source = audioContext.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(audioContext.destination);
+                            source.start();
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        appendMessage("Sorry, I couldn't process your voice message. Please try again.", false);
+                    }
+
+                    audioChunks = [];
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                voiceButton.innerHTML = '<i class="bi bi-mic-fill text-danger"></i>';
+                voiceButton.classList.add('recording');
+
+                // Stop recording after 10 seconds
+                setTimeout(() => {
+                    if (isRecording) {
+                        mediaRecorder.stop();
+                        isRecording = false;
+                        voiceButton.innerHTML = '<i class="bi bi-mic"></i>';
+                        voiceButton.classList.remove('recording');
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                }, 10000);
+
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                appendMessage("Sorry, I couldn't access your microphone. Please check your permissions.", false);
+            }
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            voiceButton.innerHTML = '<i class="bi bi-mic"></i>';
+            voiceButton.classList.remove('recording');
+        }
+    });
+
+    chatForm.appendChild(voiceButton);
 });

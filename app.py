@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,6 +16,7 @@ from services.ai_service import (
     analyze_expense_cause,
     categorize_transaction
 )
+from services.voice_service import voice_assistant
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -108,6 +110,32 @@ def chat():
         return jsonify({
             'response': "I'm having trouble processing your request right now. Let me know if you'd like tips on budgeting, saving, or expense tracking."
         }), 500
+
+@app.route('/api/voice/process', methods=['POST'])
+@login_required
+def process_voice():
+    try:
+        # Get audio data from request
+        audio_data = np.array(request.json.get('audio'), dtype=np.float32)
+
+        # Convert speech to text
+        text = voice_assistant.listen(audio_data)
+
+        # Generate response
+        response_text = voice_assistant.generate_response(text, current_user)
+
+        # Convert response to speech
+        audio_response = voice_assistant.speak(response_text)
+
+        return jsonify({
+            'text': text,
+            'response': response_text,
+            'audio': audio_response
+        })
+    except Exception as e:
+        logging.error(f"Error in voice processing: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/expenses', methods=['GET', 'POST'])
 @login_required
