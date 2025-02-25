@@ -248,7 +248,15 @@ def budget():
             db.session.commit()
             flash('Budget updated successfully!', 'success')
         else:
-            flash('No budget found for this category. Please contact administrator.', 'error')
+            new_budget = Budget(
+                user_id=current_user.id,
+                category_id=category_id,
+                amount=amount,
+                notify_threshold=notify_threshold
+            )
+            db.session.add(new_budget)
+            db.session.commit()
+            flash('Budget created successfully!', 'success')
 
     categories = Category.query.all()
     budgets = Budget.query.filter_by(user_id=current_user.id).all()
@@ -284,26 +292,6 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # Create default budgets for new user
-        default_budgets = [
-            ('🍽️ Food', 350),
-            ('🚌 Transportation', 125),
-            ('📚 Education', 175),
-            ('🎮 Entertainment', 75),
-            ('🏠 Utilities', 75),
-        ]
-
-        for category_name, amount in default_budgets:
-            category = Category.query.filter_by(name=category_name).first()
-            if category:
-                budget = Budget(
-                    user_id=user.id,
-                    category_id=category.id,
-                    amount=amount,
-                    notify_threshold=90.0
-                )
-                db.session.add(budget)
-        
         db.session.commit()
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
