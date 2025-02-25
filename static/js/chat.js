@@ -8,10 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
         messageDiv.className = `chat-message p-2 mb-2 ${isUser ? 'text-end' : ''}`;
 
         const bubble = document.createElement('div');
-        bubble.className = `d-inline-block p-2 rounded ${isUser ? 'bg-primary text-white' : 'bg-light'}`;
+        bubble.className = `d-inline-block p-3 rounded ${isUser ? 'bg-primary text-white' : 'bg-light border'}`;
         bubble.style.maxWidth = '80%';
         bubble.style.wordWrap = 'break-word';
-        bubble.textContent = message;
+
+        // Convert markdown-style bold text to HTML
+        const formattedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        bubble.innerHTML = formattedMessage;
 
         messageDiv.appendChild(bubble);
         chatMessages.appendChild(messageDiv);
@@ -29,10 +32,17 @@ document.addEventListener('DOMContentLoaded', function() {
         userInput.value = '';
 
         try {
-            // Show loading indicator
+            // Show loading indicator with a friendly message
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'chat-message p-2 mb-2';
-            loadingDiv.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+            loadingDiv.innerHTML = `
+                <div class="d-inline-block p-3 rounded bg-light border">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
+                        Analyzing your finances...
+                    </div>
+                </div>
+            `;
             chatMessages.appendChild(loadingDiv);
 
             // Get AI response
@@ -64,8 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add quick action buttons for common queries
     const addQuickActionButton = (text, query) => {
         const button = document.createElement('button');
-        button.className = 'btn btn-sm btn-outline-secondary me-2 mb-2';
-        button.textContent = text;
+        button.className = 'btn btn-sm btn-outline-primary me-2 mb-2';
+        button.innerHTML = text; // Use innerHTML to support emojis
         button.onclick = () => {
             userInput.value = query;
             chatForm.dispatchEvent(new Event('submit'));

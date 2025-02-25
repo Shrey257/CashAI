@@ -22,18 +22,23 @@ def analyze_spending_patterns(user):
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": """You are a financial advisor for college students.
+                    {"role": "system", "content": """You are a friendly and engaging financial advisor for college students.
                     Provide 3 specific tips for getting started with budgeting.
-                    Keep the advice practical and student-focused.
-                    Format the response as bullet points."""},
+                    Format your response with:
+                    - Emojis for visual engagement
+                    - Bold text for key points (use markdown **text**)
+                    - Short, clear bullet points
+                    - A motivational tone
+                    Keep it practical and student-focused."""},
                     {"role": "user", "content": "Give advice for a student just starting to track their expenses."}
                 ]
             )
             return response.choices[0].message.content
         except Exception as e:
-            return """• Start by tracking all your expenses, no matter how small
-• Set realistic budget categories based on your income
-• Look for student discounts and deals to maximize savings"""
+            return """💡 **Start Small, Think Big!**
+• Track every expense, no matter how small - they add up!
+• Set realistic budget goals that match your lifestyle
+• Use student discounts to maximize your savings"""
 
     # If there is spending data, analyze it
     category_spending = {}
@@ -45,7 +50,7 @@ def analyze_spending_patterns(user):
 
     budgets = {budget.category.name: budget.amount for budget in user.budgets}
 
-    spending_context = "Here's the student's spending data for the last 30 days:\n"
+    spending_context = "Here's your spending data for the last 30 days:\n"
     for category, amount in category_spending.items():
         budget = budgets.get(category, 0)
         spending_context += f"- {category}: Spent ${amount:.2f}"
@@ -58,60 +63,50 @@ def analyze_spending_patterns(user):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """You are a financial advisor helping a college student understand their spending.
-                Analyze their recent expenses and provide 3 specific, actionable insights.
-                Focus on areas of improvement and practical saving opportunities.
-                Use bullet points and be specific about numbers and percentages."""},
+                {"role": "system", "content": """You are a friendly and insightful financial advisor helping a college student understand their spending.
+                Analyze their expenses and provide 3 personalized insights.
+                Format your response with:
+                - Emojis for each insight
+                - Bold text for key numbers and findings
+                - Clear action items
+                - Encouraging tone
+                Make it visually engaging and easy to read."""},
                 {"role": "user", "content": spending_context}
             ]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return "• Track your daily expenses to build better spending habits\n• Set budget alerts to avoid overspending\n• Look for student discounts on essential purchases"
+        return """💰 **Track Your Spending**
+• Monitor daily expenses to build better habits
+• Set up budget alerts to stay on track
+• Look for student discounts on essential purchases"""
 
 def generate_saving_tip():
-    """Generate a general saving tip for students."""
+    """Generate an engaging saving tip for students."""
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """You are a financial advisor for college students.
-                Provide one practical money-saving tip specifically for college students.
-                Keep it concise (max 2 sentences) and actionable."""},
+                {"role": "system", "content": """You are a savvy financial advisor for college students.
+                Provide one creative money-saving tip specifically for students.
+                Format your response with:
+                - An appropriate emoji
+                - Bold text for key points
+                - A practical, actionable suggestion
+                - An encouraging tone
+                Keep it concise (max 2 sentences) and engaging."""},
                 {"role": "user", "content": "Give me a money-saving tip for college students."}
             ]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return "Consider buying used textbooks or renting them through your campus bookstore to save significantly on course materials."
-
-def categorize_transaction(description, amount):
-    """Use NLP to categorize a transaction based on its description."""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": """You are a transaction categorization system.
-                Categorize the transaction into one of these categories:
-                - Food
-                - Transportation
-                - Education
-                - Entertainment
-                - Utilities
-                Respond with ONLY the category name."""},
-                {"role": "user", "content": f"Transaction: {description} - ${amount}"}
-            ]
-        )
-        category = response.choices[0].message.content.strip()
-        return category if category in ['Food', 'Transportation', 'Education', 'Entertainment', 'Utilities'] else 'Other'
-    except Exception as e:
-        return 'Other'
+        return "📚 **Save on Textbooks**: Compare prices across different platforms and consider renting or buying used textbooks to save significantly on course materials."
 
 def analyze_expense_cause(user):
     """Analyze spending patterns and provide insights."""
     expenses = Expense.query.filter_by(user_id=user.id).all()
     if not expenses:
-        return "Start tracking your expenses to get personalized spending insights!"
+        return "📊 Start tracking your expenses to get personalized insights! I'll help you understand your spending patterns and find ways to save."
 
     total_spent = sum(e.amount for e in expenses)
     categories = {}
@@ -121,19 +116,20 @@ def analyze_expense_cause(user):
         categories[expense.category.name] += expense.amount
 
     try:
-        context = f"Total spent: ${total_spent:.2f}\nBreakdown by category:\n"
+        context = f"Total spent: **${total_spent:.2f}**\n\nBreakdown by category:\n"
         for category, amount in categories.items():
             percentage = (amount / total_spent) * 100
-            context += f"- {category}: ${amount:.2f} ({percentage:.1f}%)\n"
+            context += f"• {category}: **${amount:.2f}** ({percentage:.1f}%)\n"
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """Analyze the spending patterns and explain:
-                1. Which categories had the highest spending
-                2. Potential areas for savings
-                3. Specific recommendations for improvement
-                Keep the tone helpful and student-focused."""},
+                {"role": "system", "content": """Analyze the spending patterns and provide insights with:
+                - Emoji indicators for different spending levels
+                - Bold text for important numbers
+                - Clear recommendations
+                - A supportive, non-judgmental tone
+                Make your response visually appealing and easy to understand."""},
                 {"role": "user", "content": context}
             ]
         )
@@ -147,25 +143,55 @@ def simulate_financial_scenario(description, user):
     budgets = {b.category.name: b.amount for b in user.budgets}
 
     try:
-        context = f"""Current monthly expenses: ${current_expenses:.2f}
-Current budgets: {', '.join(f'{cat}: ${amt:.2f}' for cat, amt in budgets.items())}
+        context = f"""Current monthly expenses: **${current_expenses:.2f}**
+Current budgets: {', '.join(f'{cat}: **${amt:.2f}**' for cat, amt in budgets.items())}
 Scenario to analyze: {description}"""
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": """You are a financial simulator helping a student understand potential scenarios.
-                Analyze the situation and provide:
-                1. Projected financial impact
-                2. Potential benefits and risks
-                3. Specific recommendations
-                Use bullet points and include numbers where possible."""},
+                Provide analysis with:
+                - Emojis for different aspects (💰 for income, 📊 for expenses, etc.)
+                - Bold text for key numbers
+                - Clear bullet points
+                - Visual organization
+                Make it engaging and easy to understand."""},
                 {"role": "user", "content": context}
             ]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         return "Unable to simulate this scenario at the moment. Please try again later."
+
+def categorize_transaction(description, amount):
+    """Use NLP to categorize a transaction based on its description."""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": """You are a smart transaction categorization system.
+                Analyze the transaction and categorize it into:
+                - 🍽️ Food
+                - 🚌 Transportation
+                - 📚 Education
+                - 🎮 Entertainment
+                - 🏠 Utilities
+                Respond with ONLY the category name."""},
+                {"role": "user", "content": f"Transaction: {description} - ${amount}"}
+            ]
+        )
+        category = response.choices[0].message.content.strip()
+        category_map = {
+            'Food': '🍽️ Food',
+            'Transportation': '🚌 Transportation',
+            'Education': '📚 Education',
+            'Entertainment': '🎮 Entertainment',
+            'Utilities': '🏠 Utilities'
+        }
+        return category_map.get(category, 'Other')
+    except Exception as e:
+        return 'Other'
 
 def summarize_expenses(expenses):
     """Helper function to summarize expenses by category"""
