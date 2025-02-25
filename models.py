@@ -10,6 +10,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256))
     expenses = db.relationship('Expense', backref='user', lazy=True)
     budgets = db.relationship('Budget', backref='user', lazy=True)
+    goals = db.relationship('FinancialGoal', backref='user', lazy=True)
 
 class Category(db.Model):
     __tablename__ = 'categories'  # Changed from 'category' to 'categories'
@@ -34,3 +35,14 @@ class Budget(db.Model):
     notify_threshold = db.Column(db.Float, default=90.0)  # Percentage at which to notify (default 90%)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+
+class FinancialGoal(db.Model):
+    __tablename__ = 'financial_goals'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    target_amount = db.Column(db.Float, nullable=False)
+    current_amount = db.Column(db.Float, default=0.0)
+    deadline = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='in_progress')  # in_progress, completed, missed
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

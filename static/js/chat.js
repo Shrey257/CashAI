@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         messageDiv.className = `chat-message p-2 mb-2 ${isUser ? 'text-end' : ''}`;
 
         const bubble = document.createElement('div');
-        bubble.className = `d-inline-block p-3 rounded ${isUser ? 'bg-primary text-white' : 'bg-light border'}`;
+        bubble.className = `d-inline-block p-3 rounded ${isUser ? 'bg-primary text-white' : 'bg-light border text-dark'}`;
         bubble.style.maxWidth = '80%';
         bubble.style.wordWrap = 'break-word';
 
@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', function() {
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    // Initialize welcome message
+    appendMessage("👋 Hi! I'm your AI financial assistant. How can I help you with your finances today?", false);
 
     chatForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -36,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'chat-message p-2 mb-2';
             loadingDiv.innerHTML = `
-                <div class="d-inline-block p-3 rounded bg-light border">
+                <div class="d-inline-block p-3 rounded bg-light border text-dark">
                     <div class="d-flex align-items-center">
                         <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
                         Analyzing your finances...

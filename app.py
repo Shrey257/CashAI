@@ -8,7 +8,7 @@ from datetime import datetime
 import re
 
 from extensions import db
-from models import User, Expense, Budget, Category
+from models import User, Expense, Budget, Category, FinancialGoal # Added FinancialGoal import
 from services.ai_service import (
     analyze_spending_patterns, 
     generate_saving_tip,
@@ -68,6 +68,7 @@ def dashboard():
     # Get recent expenses and budgets
     expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).limit(5).all()
     budgets = Budget.query.filter_by(user_id=current_user.id).all()
+    goals = FinancialGoal.query.filter_by(user_id=current_user.id).order_by(FinancialGoal.created_at.desc()).all()
 
     try:
         # Get AI-generated insights
@@ -81,6 +82,7 @@ def dashboard():
     return render_template('dashboard.html', 
                          expenses=expenses, 
                          budgets=budgets,
+                         goals=goals,
                          ai_insights=ai_insights,
                          saving_tip=saving_tip)
 
@@ -261,3 +263,53 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.route('/goals/add', methods=['POST'])
+@login_required
+def add_goal():
+    try:
+        name = request.form.get('name')
+        target_amount = float(request.form.get('target_amount'))
+        deadline = datetime.strptime(request.form.get('deadline'), '%Y-%m-%d')
+
+        goal = FinancialGoal(
+            name=name,
+            target_amount=target_amount,
+            deadline=deadline,
+            user_id=current_user.id
+        )
+
+        db.session.add(goal)
+        db.session.commit()
+        flash('Financial goal added successfully!', 'success')
+    except Exception as e:
+        logging.error(f"Error adding financial goal: {str(e)}")
+        flash('Error adding financial goal. Please try again.', 'danger')
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/goals/update/<int:goal_id>', methods=['POST'])
+@login_required
+def update_goal(goal_id):
+    try:
+        goal = FinancialGoal.query.get_or_404(goal_id)
+        if goal.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        current_amount = float(request.form.get('current_amount'))
+        goal.current_amount = current_amount
+
+        if current_amount >= goal.target_amount:
+            goal.status = 'completed'
+        elif goal.deadline < datetime.now() and current_amount < goal.target_amount:
+            goal.status = 'missed'
+
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'progress': int((current_amount / goal.target_amount) * 100),
+            'status': goal.status
+        })
+    except Exception as e:
+        logging.error(f"Error updating goal: {str(e)}")
+        return jsonify({'error': 'Failed to update goal'}), 500
