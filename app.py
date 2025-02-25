@@ -117,12 +117,23 @@ def chat():
             return jsonify({'response': 'Please ask me a question about your finances.'}), 400
 
         # Handle different types of financial queries
-        if any(word in message for word in ['simulate', 'job', 'income']):
-            response = simulate_financial_scenario(message, current_user)
+        # Enhanced topic detection for more varied responses
+        if any(word in message for word in ['budget', 'plan', 'allocate']):
+            response = analyze_spending_patterns(current_user)
+        elif any(word in message for word in ['save', 'saving', 'savings', 'tips']):
+            response = generate_saving_tip()
+        elif any(word in message for word in ['invest', 'investment', 'stock', 'future']):
+            response = simulate_financial_scenario("investment advice " + message, current_user)
+        elif any(word in message for word in ['debt', 'loan', 'credit']):
+            response = simulate_financial_scenario("debt management " + message, current_user)
+        elif any(word in message for word in ['earn', 'job', 'income', 'work']):
+            response = simulate_financial_scenario("income opportunities " + message, current_user)
+        elif any(word in message for word in ['emergency', 'fund', 'safety']):
+            response = simulate_financial_scenario("emergency fund " + message, current_user)
         elif any(word in message for word in ['overspend', 'spent', 'spending']):
             response = analyze_expense_cause(current_user)
         else:
-            # General financial advice
+            # General financial advice with enhanced context
             response = analyze_spending_patterns(current_user)
 
         if not response or response.isspace():

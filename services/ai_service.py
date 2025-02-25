@@ -8,12 +8,25 @@ from extensions import db
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def analyze_spending_patterns(user):
-    """Analyze user's spending patterns and generate insights."""
+    """Analyze user's spending patterns and generate comprehensive insights."""
     thirty_days_ago = datetime.now() - timedelta(days=30)
     expenses = Expense.query.filter(
         Expense.user_id == user.id,
         Expense.date >= thirty_days_ago
     ).all()
+
+    topics = {
+        'spending': "Analyze my spending patterns",
+        'budget': "How can I budget better?",
+        'save': "Give me saving tips",
+        'debt': "How to manage student debt?",
+        'invest': "Basic investment advice for students",
+        'income': "Ways to earn extra income",
+        'emergency': "Building emergency fund tips",
+        'textbooks': "Saving on academic expenses",
+        'food': "Reducing food expenses",
+        'entertainment': "Budget-friendly entertainment"
+    }
 
     # Prepare context for OpenAI
     if not expenses:
@@ -22,19 +35,34 @@ def analyze_spending_patterns(user):
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": """You are a friendly and engaging financial advisor for college students.
-                    Provide specific budget recommendations based on typical student expenses:
-                    - 🍽️ Food & Groceries: 30-35% of budget
-                    - 📚 Education Materials: 15-20%
-                    - 🚌 Transportation: 10-15%
-                    - 🎮 Entertainment: 5-10%
+                    {"role": "system", "content": """You are a comprehensive financial advisor for college students.
+                    Consider these aspects in your advice:
+                    
+                    Budget Recommendations:
+                    - 🍽️ Food & Groceries: 30-35% (meal prep, campus dining, groceries)
+                    - 📚 Education: 15-20% (books, supplies, software)
+                    - 🚌 Transportation: 10-15% (public transit, ride-sharing)
+                    - 🎮 Entertainment: 5-10% (social activities, streaming)
                     - 🏠 Housing/Utilities: 25-30% (if applicable)
-
-                    Format your response with:
-                    - Emojis for visual engagement
-                    - Clean text without markdown formatting
-                    - Clear explanations for each category
-                    - Student-specific examples"""},
+                    
+                    Additional Topics:
+                    - 💰 Emergency fund building
+                    - 📈 Basic investing (apps, micro-investing)
+                    - 💳 Student credit building
+                    - 🎓 Student loan management
+                    - 💼 Part-time work opportunities
+                    - 🏪 Student discounts and deals
+                    - 📱 Money-saving apps
+                    - 📅 Seasonal savings tips
+                    
+                    Response Style:
+                    - Use emojis for engagement
+                    - Provide specific dollar examples
+                    - Include campus-specific opportunities
+                    - Share real student success stories
+                    - Highlight free campus resources
+                    - Suggest tech tools and apps
+                    - Mix immediate and long-term advice"""},
                     {"role": "user", "content": "I'm a student starting to budget. What are realistic spending targets?"}
                 ]
             )
