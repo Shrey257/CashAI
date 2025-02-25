@@ -32,13 +32,13 @@ def analyze_spending_patterns(user):
 
                     Format your response with:
                     - Emojis for visual engagement
-                    - Bold text for key numbers
+                    - Clean text without markdown formatting
                     - Clear explanations for each category
                     - Student-specific examples"""},
                     {"role": "user", "content": "I'm a student starting to budget. What are realistic spending targets?"}
                 ]
             )
-            return response.choices[0].message.content
+            return response.choices[0].message.content.replace('**', '')
         except Exception as e:
             return """💰 **Recommended Student Budget Breakdown:**
 • 🍽️ Food & Groceries: **$300-400** monthly (includes meal plans and groceries)
@@ -103,13 +103,13 @@ def generate_saving_tip():
                 - Specific amounts that could be saved
                 - Real student examples
                 - Campus-specific opportunities
-                Format with emojis and bold text for key points."""},
+                Use emojis but avoid markdown formatting."""},
                 {"role": "user", "content": "Give me a creative money-saving tip for college students."}
             ]
         )
-        return response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip().replace('**', '')
     except Exception as e:
-        return "💡 **Smart Student Savings**: Use your student ID for discounts on software, entertainment, and food. Many restaurants near campus offer **10-25% off** with student ID!"
+        return "💡 Smart Student Savings: Use your student ID for discounts on software, entertainment, and food. Many restaurants near campus offer 10-25% off with student ID!"
 
 def categorize_transaction(description, amount):
     """Use enhanced NLP to categorize transactions based on typical student spending."""
