@@ -1,15 +1,65 @@
-/* Custom styles on top of Bootstrap dark theme */
+/* Modern UI styles with gradients and animations */
 :root {
     --budget-green: var(--bs-success);
     --budget-red: var(--bs-danger);
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #0f172a;
+}
+
+.navbar {
+    background: var(--primary-gradient) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
 }
 
 .budget-card {
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .budget-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: var(--primary-gradient);
+    transition: width 0.6s ease;
 }
 
 .expense-progress {
