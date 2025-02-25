@@ -48,13 +48,35 @@ with app.app_context():
     # Create all database tables
     db.create_all()
 
-    # Create default categories if they don't exist
-    default_categories = ['Food', 'Transportation', 'Education', 'Entertainment', 'Utilities']
-    for category_name in default_categories:
+    # Create default categories with recommended student budget amounts
+    default_categories = [
+        ('🍽️ Food', 350),  # Monthly food budget including groceries and dining
+        ('🚌 Transportation', 125),  # Public transit, ride-sharing
+        ('📚 Education', 175),  # Books, supplies, software
+        ('🎮 Entertainment', 75),  # Social activities, streaming services
+        ('🏠 Utilities', 75),  # Phone, internet, shared utilities
+    ]
+
+    for category_name, default_amount in default_categories:
         if not Category.query.filter_by(name=category_name).first():
             category = Category(name=category_name)
             db.session.add(category)
+            db.session.commit()  # Commit to get the category ID
+
+            # Get all users and create default budgets for them
+            users = User.query.all()
+            for user in users:
+                if not Budget.query.filter_by(user_id=user.id, category_id=category.id).first():
+                    budget = Budget(
+                        amount=default_amount,
+                        category_id=category.id,
+                        user_id=user.id,
+                        notify_threshold=90.0
+                    )
+                    db.session.add(budget)
+
     db.session.commit()
+
 
 @app.route('/')
 def index():
