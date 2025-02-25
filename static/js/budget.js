@@ -1,4 +1,3 @@
-
 // Auto-fill budget form based on selected category
 document.addEventListener('DOMContentLoaded', function() {
     const categorySelect = document.getElementById('category');
@@ -6,49 +5,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const thresholdInput = document.getElementById('notify_threshold');
 
     function updateFormValues() {
+        if (!categorySelect || !amountInput || !thresholdInput) return;
+
         const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        if (!selectedOption) return;
+
         const amount = selectedOption.getAttribute('data-amount');
         const threshold = selectedOption.getAttribute('data-threshold');
-        
-        if (amount) {
-            amountInput.value = amount;
-        } else {
-            amountInput.value = '';
-        }
-        
-        thresholdInput.value = threshold;
+
+        amountInput.value = amount || '';
+        thresholdInput.value = threshold || '90';
     }
 
     // Update on page load
-    updateFormValues();
-
-    // Update when category changes
-    categorySelect.addEventListener('change', updateFormValues);
+    if (categorySelect) {
+        updateFormValues();
+        // Update when category changes
+        categorySelect.addEventListener('change', updateFormValues);
+    }
 });
-
 
 // Show notifications when budget limits are approached
 function checkBudgetLimits() {
     const expenses = document.querySelectorAll('[data-expense]');
-    const budgets = document.querySelectorAll('[data-budget]');
+    expenses.forEach(expense => {
+        const amount = parseFloat(expense.getAttribute('data-expense'));
+        const budget = parseFloat(expense.getAttribute('data-budget'));
+        const category = expense.getAttribute('data-category');
 
-    expenses.forEach((expense, index) => {
-        const expenseAmount = parseFloat(expense.dataset.expense);
-        const budgetAmount = parseFloat(budgets[index].dataset.budget);
-        const category = expense.dataset.category;
-
-        if (expenseAmount >= budgetAmount * 0.9) {
+        if (amount >= budget * 0.9) {
             showNotification(`Warning: You've reached 90% of your ${category} budget!`, 'warning');
-        }
-        if (expenseAmount > budgetAmount) {
-            showNotification(`Alert: You've exceeded your ${category} budget!`, 'danger');
         }
     });
 }
 
-// Display toast notifications
 function showNotification(message, type) {
     const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+
     const toast = document.createElement('div');
     toast.className = `toast align-items-center text-white bg-${type} border-0`;
     toast.setAttribute('role', 'alert');
