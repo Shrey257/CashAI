@@ -1,3 +1,32 @@
+
+// Auto-fill budget form based on selected category
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    const amountInput = document.getElementById('amount');
+    const thresholdInput = document.getElementById('notify_threshold');
+
+    function updateFormValues() {
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const amount = selectedOption.getAttribute('data-amount');
+        const threshold = selectedOption.getAttribute('data-threshold');
+        
+        if (amount) {
+            amountInput.value = amount;
+        } else {
+            amountInput.value = '';
+        }
+        
+        thresholdInput.value = threshold;
+    }
+
+    // Update on page load
+    updateFormValues();
+
+    // Update when category changes
+    categorySelect.addEventListener('change', updateFormValues);
+});
+
+
 // Show notifications when budget limits are approached
 function checkBudgetLimits() {
     const expenses = document.querySelectorAll('[data-expense]');

@@ -11,13 +11,16 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Set Budget</h5>
+                <h5 class="card-title">Update Budget</h5>
                 <form method="POST">
                     <div class="mb-3">
                         <label for="category" class="form-label">Category</label>
                         <select class="form-select" id="category" name="category" required>
                             {% for category in categories %}
-                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% set budget = budgets|selectattr('category_id', 'equalto', category.id)|first %}
+                            <option value="{{ category.id }}" data-amount="{{ budget.amount if budget else '' }}" data-threshold="{{ budget.notify_threshold if budget else 90 }}">
+                                {{ category.name }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -37,7 +40,7 @@
                         </div>
                         <div class="form-text">You'll be notified when spending reaches this percentage of your budget.</div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Set Budget</button>
+                    <button type="submit" class="btn btn-primary w-100">Update Budget</button>
                 </form>
             </div>
         </div>
