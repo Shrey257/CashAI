@@ -7,7 +7,9 @@ import sounddevice as sd
 from tempfile import NamedTemporaryFile
 from services.ai_service import analyze_spending_patterns, generate_saving_tip, analyze_expense_cause
 
+
 class VoiceAssistant:
+
     def __init__(self):
         self.recognizer = sr.Recognizer()
         self.engine = pyttsx3.init()
@@ -28,7 +30,7 @@ class VoiceAssistant:
                     wf.setsampwidth(2)
                     wf.setframerate(44100)
                     wf.writeframes(audio_int16.tobytes())
-                
+
                 # Use the temporary file for speech recognition
                 with sr.AudioFile(temp_file.name) as source:
                     audio = self.recognizer.record(source)
@@ -48,7 +50,7 @@ class VoiceAssistant:
             response = analyze_expense_cause(user)
         else:
             response = "I can help you with your spending analysis, saving tips, and budget management. What would you like to know?"
-        
+
         return self._clean_response(response)
 
     def _clean_response(self, text):
@@ -57,9 +59,14 @@ class VoiceAssistant:
         text = text.replace('**', '')
         # Replace emojis with their descriptions
         emoji_map = {
-            '💰': 'money', '📊': 'chart', '💡': 'tip',
-            '🍽️': 'food', '🚌': 'transport', '📚': 'education',
-            '🎮': 'entertainment', '🏠': 'home'
+            '💰': 'money',
+            '📊': 'chart',
+            '💡': 'tip',
+            '🍽️': 'food',
+            '🚌': 'transport',
+            '📚': 'education',
+            '🎮': 'entertainment',
+            '🏠': 'home'
         }
         for emoji, description in emoji_map.items():
             text = text.replace(emoji, description)
@@ -72,13 +79,14 @@ class VoiceAssistant:
             with NamedTemporaryFile(suffix=".wav", delete=True) as temp_file:
                 self.engine.save_to_file(text, temp_file.name)
                 self.engine.runAndWait()
-                
+
                 # Read the audio file
                 with wave.open(temp_file.name, 'rb') as wf:
                     # Get audio data
-                    audio_data = np.frombuffer(wf.readframes(wf.getnframes()), dtype=np.int16)
+                    audio_data = np.frombuffer(wf.readframes(wf.getnframes()),
+                                               dtype=np.int16)
                     audio_data = audio_data.astype(np.float32) / 32767.0
-                    
+
                     return {
                         'audio': audio_data.tolist(),
                         'sample_rate': wf.getframerate(),
@@ -86,5 +94,6 @@ class VoiceAssistant:
                     }
         except Exception as e:
             return {'error': str(e)}
+
 
 voice_assistant = VoiceAssistant()
