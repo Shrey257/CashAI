@@ -235,7 +235,7 @@ def budget():
     if request.method == 'POST':
         category_id = int(request.form.get('category'))
         amount = float(request.form.get('amount'))
-        notify_threshold = float(request.form.get('notify_threshold', 90))  # Default to 90% if not provided
+        notify_threshold = float(request.form.get('notify_threshold', 90))
 
         existing_budget = Budget.query.filter_by(
             user_id=current_user.id,
@@ -245,17 +245,10 @@ def budget():
         if existing_budget:
             existing_budget.amount = amount
             existing_budget.notify_threshold = notify_threshold
+            db.session.commit()
+            flash('Budget updated successfully!', 'success')
         else:
-            new_budget = Budget(
-                user_id=current_user.id,
-                category_id=category_id,
-                amount=amount,
-                notify_threshold=notify_threshold
-            )
-            db.session.add(new_budget)
-
-        db.session.commit()
-        flash('Budget updated successfully!', 'success')
+            flash('No budget found for this category. Please contact administrator.', 'error')
 
     categories = Category.query.all()
     budgets = Budget.query.filter_by(user_id=current_user.id).all()
