@@ -9,11 +9,15 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def analyze_spending_patterns(user):
     """Analyze user's spending patterns and generate comprehensive insights."""
-    thirty_days_ago = datetime.now() - timedelta(days=30)
-    expenses = Expense.query.filter(
-        Expense.user_id == user.id,
-        Expense.date >= thirty_days_ago
-    ).all()
+    try:
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        expenses = Expense.query.filter(
+            Expense.user_id == user.id,
+            Expense.date >= thirty_days_ago
+        ).all()
+    except Exception as e:
+        logging.error(f"Error analyzing spending patterns: {str(e)}")
+        return "Unable to analyze spending patterns at the moment. Please ensure your expenses are properly recorded."
 
     # Calculate total spending and category breakdown
     total_spent = sum(expense.amount for expense in expenses)

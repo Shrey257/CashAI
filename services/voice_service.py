@@ -1,4 +1,3 @@
-
 import os
 import json
 import speech_recognition as sr
@@ -8,6 +7,7 @@ import sounddevice as sd
 import wave
 from tempfile import NamedTemporaryFile
 from services.ai_service import analyze_spending_patterns, generate_saving_tip, analyze_expense_cause
+import logging
 
 class VoiceAssistant:
     def __init__(self):
@@ -15,7 +15,7 @@ class VoiceAssistant:
         self.engine = pyttsx3.init()
         self.engine.setProperty('rate', 150)
         self.engine.setProperty('volume', 0.9)
-        
+
     def listen(self, audio_data):
         """Convert audio data to text using speech recognition"""
         try:
@@ -31,7 +31,7 @@ class VoiceAssistant:
                 with sr.AudioFile(temp_file.name) as source:
                     audio = self.recognizer.record(source)
                     text = self.recognizer.recognize_google(audio)
-                    
+
                 # Clean up temp file
                 os.unlink(temp_file.name)
                 return text.lower()
@@ -46,7 +46,7 @@ class VoiceAssistant:
         """Generate appropriate response based on user input"""
         if text.startswith("Sorry") or text.startswith("Error"):
             return text
-            
+
         if any(word in text for word in ['spending', 'expenses', 'budget', 'cost']):
             response = analyze_spending_patterns(user)
         elif any(word in text for word in ['save', 'saving', 'savings', 'money']):
@@ -94,7 +94,7 @@ class VoiceAssistant:
 
                     # Clean up temp file
                     os.unlink(temp_file.name)
-                    
+
                     return {
                         'audio': audio_data.tolist(),
                         'sample_rate': wf.getframerate(),
