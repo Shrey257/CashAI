@@ -172,12 +172,16 @@ def expenses():
         category_id = request.form.get('category')
         if not category_id:
             suggested_category = categorize_transaction(description, amount)
-            category = Category.query.filter_by(name=suggested_category).first()
+            # Try to find an existing category that matches
+            category = Category.query.filter(Category.name.ilike(f'%{suggested_category}%')).first()
             if category:
                 category_id = category.id
             else:
-                # Default to first category if suggestion fails
-                category_id = Category.query.first().id
+                # Default to 'Other' or first category if suggestion fails
+                category = Category.query.filter(Category.name.ilike('%other%')).first()
+                if not category:
+                    category = Category.query.first()
+                category_id = category.id
         else:
             category_id = int(category_id)
 
@@ -276,6 +280,27 @@ def register():
         db.session.add(user)
         db.session.commit()
 
+        # Create default budgets for new user
+        default_budgets = [
+            ('🍽️ Food', 350),
+            ('🚌 Transportation', 125),
+            ('📚 Education', 175),
+            ('🎮 Entertainment', 75),
+            ('🏠 Utilities', 75),
+        ]
+
+        for category_name, amount in default_budgets:
+            category = Category.query.filter_by(name=category_name).first()
+            if category:
+                budget = Budget(
+                    user_id=user.id,
+                    category_id=category.id,
+                    amount=amount,
+                    notify_threshold=90.0
+                )
+                db.session.add(budget)
+        
+        db.session.commit()
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
