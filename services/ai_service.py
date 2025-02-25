@@ -15,28 +15,56 @@ def analyze_spending_patterns(user):
         Expense.date >= thirty_days_ago
     ).all()
 
-    topics = {
-        'spending': "Analyze my spending patterns",
-        'budget': "How can I budget better?",
-        'save': "Give me saving tips",
-        'debt': "How to manage student debt?",
-        'invest': "Basic investment advice for students",
-        'income': "Ways to earn extra income",
-        'emergency': "Building emergency fund tips",
-        'textbooks': "Saving on academic expenses",
-        'food': "Reducing food expenses",
-        'entertainment': "Budget-friendly entertainment"
-    }
+    # Calculate total spending and category breakdown
+    total_spent = sum(expense.amount for expense in expenses)
+    category_spending = {}
+    for expense in expenses:
+        cat_name = expense.category.name
+        if cat_name not in category_spending:
+            category_spending[cat_name] = 0
+        category_spending[cat_name] += expense.amount
+
+    # Get user's budgets
+    budgets = {budget.category.name: budget.amount for budget in user.budgets}
+    
+    # Build detailed spending analysis
+    analysis = "Here's your spending analysis:\n\n"
+    for category, amount in category_spending.items():
+        budget = budgets.get(category, 0)
+        percentage = (amount / budget * 100) if budget > 0 else 0
+        analysis += f"- {category}: Spent ${amount:.2f}"
+        if budget:
+            analysis += f" (Budget: ${budget:.2f}, {percentage:.1f}% used)\n"
+            if percentage > 100:
+                analysis += f"⚠️ Over budget by ${amount - budget:.2f}\n"
+            elif percentage > 90:
+                analysis += "⚠️ Approaching budget limit\n"
 
     # Prepare context for OpenAI
     if not expenses:
         try:
-            # Generate general advice with student budget recommendations
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": """You are a comprehensive financial advisor for college students.
-                    Consider these aspects in your advice:
+                    {"role": "system", "content": """You are an expert financial advisor specializing in student finances.
+                    Provide specific, actionable advice focusing on:
+                    
+                    1. Immediate Action Items:
+                    - Concrete steps to improve financial health
+                    - Specific dollar amounts and percentages
+                    - Local campus resources and opportunities
+                    
+                    2. Spending Analysis:
+                    - Compare to typical student benchmarks
+                    - Identify concerning patterns
+                    - Highlight positive financial habits
+                    
+                    3. Money-Saving Opportunities:
+                    - Student-specific discounts and deals
+                    - Campus resource alternatives
+                    - Seasonal saving strategies
+                    
+                    Use emojis and clear formatting to make advice engaging and actionable.
                     
                     Budget Recommendations:
                     - 🍽️ Food & Groceries: 30-35% (meal prep, campus dining, groceries)
