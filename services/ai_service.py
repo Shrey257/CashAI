@@ -1,6 +1,7 @@
 import os
 from openai import OpenAI
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from models import Expense, Budget, Category
 from extensions import db
 

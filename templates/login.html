@@ -1,24 +1,105 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<style>
+    /* Background Styling */
+    body {
+        background: linear-gradient(to right, #1e3c72, #2a5298);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    /* Card Styling (Glassmorphism) */
+    .card {
+        animation: cardEntrance 0.6s ease-out;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        border: none;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.15);
+        padding: 25px;
+        color: white;
+    }
+
+    /* Button Styling */
+    .btn-primary {
+        transition: all 0.3s ease-in-out;
+        background: linear-gradient(45deg, #ff7eb3, #ff758c);
+        border: none;
+        font-weight: bold;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 117, 140, 0.4);
+    }
+
+    /* Input Field Styling */
+    .form-control {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .form-control:focus {
+        background: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        outline: none;
+    }
+
+    /* Title Styling */
+    .card-title {
+        font-weight: bold;
+        text-align: center;
+    }
+
+    /* Animation */
+    @keyframes cardEntrance {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Link Styling */
+    a {
+        color: #ff758c;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
+
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-4">
         <div class="card">
             <div class="card-body">
-                <h2 class="card-title text-center mb-4">Login</h2>
+                <h2 class="card-title">💰 Welcome to <span style="color:#ff7eb3;">CashAI</span></h2>
+                <p class="text-center">Track your finances with AI-powered insights!</p>
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <label for="email" class="form-label">📧 Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="your@email.com">
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <label for="password" class="form-label">🔒 Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                    <button type="submit" class="btn btn-primary w-100">
+                        🚀 Login to CashAI
+                    </button>
                 </form>
                 <div class="text-center mt-3">
-                    <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+                    <p>New here? <a href="{{ url_for('register') }}">Join the AI revolution! 🤖</a></p>
                 </div>
             </div>
         </div>

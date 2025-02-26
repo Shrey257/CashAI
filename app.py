@@ -93,9 +93,18 @@ def dashboard():
     goals = FinancialGoal.query.filter_by(user_id=current_user.id).order_by(FinancialGoal.created_at.desc()).all()
 
     try:
-        # Get AI-generated insights
+        from services.expense_predictor import predict_monthly_expenses
+        from services.goals_advisor import suggest_saving_strategies
+        
+        # Get AI-generated insights and predictions
         ai_insights = analyze_spending_patterns(current_user)
         saving_tip = generate_saving_tip()
+        expense_predictions = predict_monthly_expenses(current_user)
+        
+        # Get saving strategies for each goal
+        goal_strategies = {}
+        for goal in goals:
+            goal_strategies[goal.id] = suggest_saving_strategies(current_user, goal)
     except Exception as e:
         logging.error(f"Error generating AI insights: {str(e)}")
         ai_insights = "• Start by tracking your daily expenses to understand your spending patterns\n• Set budgets for different categories to manage your finances better\n• Look for student discounts and deals to save money"
@@ -106,7 +115,9 @@ def dashboard():
                          budgets=budgets,
                          goals=goals,
                          ai_insights=ai_insights,
-                         saving_tip=saving_tip)
+                         saving_tip=saving_tip,
+                         expense_predictions=expense_predictions,
+                         goal_strategies=goal_strategies)
 
 @app.route('/api/chat', methods=['POST'])
 @login_required

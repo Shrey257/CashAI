@@ -8,6 +8,18 @@ import wave
 from tempfile import NamedTemporaryFile
 from services.ai_service import analyze_spending_patterns, generate_saving_tip, analyze_expense_cause
 import logging
+import re
+
+class Expense: # Placeholder class
+    def __init__(self, amount, category_id, user_id):
+        self.amount = amount
+        self.category_id = category_id
+        self.user_id = user_id
+
+def get_category_id(category): # Placeholder function
+    # Replace with actual database query to get category ID
+    category_map = {"food": 1, "transport": 2, "education": 3, "entertainment": 4, "utilities": 5}
+    return category_map.get(category)
 
 class VoiceAssistant:
     def __init__(self):
@@ -43,26 +55,36 @@ class VoiceAssistant:
             return f"Error processing audio: {str(e)}"
 
     def generate_response(self, text, user):
-        """Generate appropriate response based on user input"""
-        if text.startswith("Sorry") or text.startswith("Error"):
-            return text
+        """Enhanced voice command processing with natural language understanding"""
+        text = text.lower()
 
-        if any(word in text for word in ['spending', 'expenses', 'budget', 'cost']):
-            response = analyze_spending_patterns(user)
-        elif any(word in text for word in ['save', 'saving', 'savings', 'money']):
-            response = generate_saving_tip()
-        elif any(word in text for word in ['why', 'how come', 'reason', 'explain']):
-            response = analyze_expense_cause(user)
-        elif any(word in text for word in ['help', 'assist', 'what can you do']):
-            response = """I can help you with:
-            1. Analyzing your spending patterns
-            2. Providing saving tips
-            3. Explaining your expenses
-            Just ask me about any of these topics!"""
-        else:
-            response = "I can help you with your spending analysis, saving tips, and budget management. What would you like to know?"
+        # Command patterns
+        if "add expense" in text:
+            # Extract amount and category using regex
+            amount_match = re.search(r'\d+(\.\d{1,2})?', text)
+            amount = float(amount_match.group()) if amount_match else None
 
-        return self._clean_response(response)
+            categories = ["food", "transport", "education", "entertainment", "utilities"]
+            category = next((cat for cat in categories if cat in text), None)
+
+            if amount and category:
+                # Add expense through voice - Placeholder
+                expense = Expense(amount=amount, category_id=get_category_id(category), user_id=user.id) # Placeholder
+                #db.session.add(expense) # Placeholder database interaction
+                #db.session.commit() # Placeholder database interaction
+                return f"Added ${amount} expense for {category}"
+
+        elif "budget summary" in text:
+            # Placeholder for fetching expenses
+            user_expenses = user.expenses if hasattr(user, 'expenses') else [] # Placeholder for user object
+            total_spent = sum(e.amount for e in user_expenses)
+            return f"Your total spending is ${total_spent:.2f}. Would you like a detailed breakdown?"
+
+        elif "financial advice" in text:
+            return analyze_spending_patterns(user)
+
+        return "I'm sorry, I didn't understand that command. Try saying 'add expense', 'budget summary', or 'financial advice'"
+
 
     def _clean_response(self, text):
         """Clean up response text"""
