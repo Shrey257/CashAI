@@ -6,7 +6,6 @@ from models import Expense, Budget, Category
 from extensions import db
 
 # Initialize OpenAI client with the provided API key
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def analyze_spending_patterns(user):
     """Analyze user's spending patterns and generate comprehensive insights."""
